@@ -32,7 +32,7 @@ Browser  →  localhost:3000/api/chat  →  api.anakin.ai
 ## Requirements
 
 - [Node.js](https://nodejs.org) v18 or later
-- An [Anakin API](https://anakin.ai) key
+- An [Anakin API](https://anakin.io/) key
 
 
 ## Getting Started

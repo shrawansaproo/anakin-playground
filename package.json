@@ -1,0 +1,21 @@
+{
+  "name": "devintel-signal-matrix",
+  "version": "0.6.0",
+  "description": "AI-powered dev networking intelligence — Anakin API + Node proxy + 5 platform signal matrix",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "anakin",
+    "claude",
+    "developer-tools",
+    "ai",
+    "dashboard"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.22.1"
+  }
+}

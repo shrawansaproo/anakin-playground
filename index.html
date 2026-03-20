@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevIntel — Signal Matrix</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&family=Newsreader:ital,wght@0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#080a0e;--surface:#0e1117;--surface2:#141820;
+    --border:#1e2530;--border2:#252d3a;
+    --amber:#f5a623;--amber-dim:rgba(245,166,35,0.12);
+    --cyan:#00d4c8;--cyan-dim:rgba(0,212,200,0.1);
+    --rose:#ff5f6d;--rose-dim:rgba(255,95,109,0.1);
+    --lime:#9ef01a;--lime-dim:rgba(158,240,26,0.1);
+    --violet:#b97ff8;--violet-dim:rgba(185,127,248,0.1);
+    --text:#e8ecf3;--text2:#8892a4;--text3:#50596a;
+    --green:#22c55e;--green-dim:rgba(34,197,94,0.1);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:15px}
+  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+
+  /* ── MODAL ── */
+  .modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(8,10,14,.93);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center}
+  .modal-overlay.hidden{display:none}
+  .modal-box{background:var(--surface);border:1px solid var(--border2);border-radius:8px;width:510px;animation:sIn .2s ease}
+  @keyframes sIn{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .mhdr{background:var(--surface2);padding:1rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .mtitle{font-family:'Syne',sans-serif;font-weight:700;font-size:.88rem;color:var(--text)}
+  .mtitle span{color:var(--amber)}
+  .mclose{background:none;border:none;color:var(--text3);font-size:1.1rem;cursor:pointer;transition:color .15s}
+  .mclose:hover{color:var(--text)}
+  .mbod{padding:1.4rem;display:flex;flex-direction:column;gap:1rem}
+  .steps{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:.9rem 1rem;display:flex;flex-direction:column;gap:.55rem}
+  .step{display:flex;gap:.65rem;font-size:.63rem;color:var(--text2);line-height:1.55;align-items:flex-start}
+  .snum{width:18px;height:18px;border-radius:50%;background:var(--amber-dim);border:1px solid rgba(245,166,35,.3);color:var(--amber);font-size:.58rem;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.05rem}
+  .mdesc{font-size:.64rem;color:var(--text2);line-height:1.65}
+  .mdesc a,.mdesc code{color:var(--amber)}
+  .flabel{font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:.38rem}
+  .kwrap{position:relative}
+  .kinp{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:.62rem 2.8rem .62rem .9rem;font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--text);outline:none;letter-spacing:.03em;transition:border-color .15s}
+  .kinp:focus{border-color:var(--amber)}
+  .kinp::placeholder{color:var(--text3)}
+  .ktog{position:absolute;right:.7rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:.75rem;transition:color .15s}
+  .ktog:hover{color:var(--text2)}
+  .msel{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:.58rem .9rem;font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--text);outline:none;appearance:none;cursor:pointer;transition:border-color .15s}
+  .msel:focus{border-color:var(--amber)}
+  .mst{font-size:.62rem;padding:.38rem .7rem;border-radius:3px;display:none}
+  .mst.ok{display:block;background:var(--green-dim);color:var(--green);border:1px solid rgba(34,197,94,.25)}
+  .mst.err{display:block;background:var(--rose-dim);color:var(--rose);border:1px solid rgba(255,95,109,.25)}
+  .mst.info{display:block;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,166,35,.25)}
+  .mft{display:flex;gap:.6rem;justify-content:flex-end;padding:0 1.4rem 1.4rem}
+  .bsec{padding:.46rem 1rem;background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--text2);font-family:'IBM Plex Mono',monospace;font-size:.63rem;cursor:pointer;transition:all .15s}
+  .bsec:hover{border-color:var(--text3);color:var(--text)}
+  .bpri{padding:.46rem 1.2rem;background:var(--amber);border:none;border-radius:3px;color:#080a0e;font-family:'IBM Plex Mono',monospace;font-size:.63rem;font-weight:500;cursor:pointer;letter-spacing:.07em;transition:filter .15s}
+  .bpri:hover{filter:brightness(1.12)}
+
+  /* proxy notice */
+  .proxy-notice{background:rgba(0,212,200,0.06);border:1px solid rgba(0,212,200,0.2);border-radius:4px;padding:.7rem .9rem;font-size:.62rem;color:var(--cyan);line-height:1.6}
+  .proxy-notice strong{color:var(--text)}
+
+  /* ── HEADER ── */
+  header{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:1.1rem 2.4rem;border-bottom:1px solid var(--border);background:rgba(8,10,14,.92);backdrop-filter:blur(12px)}
+  .logo{display:flex;align-items:baseline;gap:.5rem}
+  .lm{font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;color:var(--text);letter-spacing:-.03em}
+  .lm span{color:var(--amber)}
+  .lt{font-size:.58rem;color:var(--text3);letter-spacing:.16em;text-transform:uppercase;border:1px solid var(--border2);padding:.12rem .4rem;border-radius:3px}
+  .hr2{display:flex;align-items:center;gap:.9rem}
+  .tbadge{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);background:var(--amber-dim);border:1px solid rgba(245,166,35,.25);padding:.2rem .62rem;border-radius:2px}
+  .abadge{display:flex;align-items:center;gap:.4rem;font-size:.58rem;letter-spacing:.09em;padding:.2rem .62rem;border-radius:2px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text3);font-family:'IBM Plex Mono',monospace;transition:all .15s}
+  .abadge:hover{border-color:var(--text3);color:var(--text2)}
+  .abadge.ok{background:var(--green-dim);border-color:rgba(34,197,94,.3);color:var(--green)}
+  .abadge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .pulse{width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime);animation:pls 2s ease-in-out infinite}
+  @keyframes pls{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* ── MAIN ── */
+  main{position:relative;z-index:2;padding:1.8rem 2.4rem;max-width:1440px;margin:0 auto}
+  .sh{display:flex;align-items:center;gap:.8rem;margin-bottom:1rem}
+  .sh h2{font-family:'Syne',sans-serif;font-weight:700;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--text3);white-space:nowrap}
+  .sl{flex:1;height:1px;background:linear-gradient(to right,var(--border2),transparent)}
+
+  /* ── PLATFORM CARDS ── */
+  .pg{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:1.8rem}
+  .pc{background:var(--surface);padding:1.2rem;cursor:pointer;transition:background .18s;position:relative;min-height:185px;display:flex;flex-direction:column;gap:.7rem}
+  .pc:hover{background:var(--surface2)}
+  .pc.active{background:var(--surface2)}
+  .pc.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px}
+  [data-p="substack"].active::after{background:var(--amber)}
+  [data-p="devforum"].active::after{background:var(--cyan)}
+  [data-p="stackoverflow"].active::after{background:var(--rose)}
+  [data-p="github"].active::after{background:var(--lime)}
+  [data-p="hackernews"].active::after{background:var(--violet)}
+  .pi{font-size:1.2rem;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:5px;border:1px solid var(--border2)}
+  .pn{font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;color:var(--text)}
+  .ph{font-size:.56rem;color:var(--text3);letter-spacing:.07em}
+  .ps2{font-size:.64rem;color:var(--text2);line-height:1.55;font-family:'Newsreader',serif;font-style:italic;flex:1}
+  .pm{display:flex;flex-direction:column;gap:.3rem}
+  .mr{display:flex;justify-content:space-between;align-items:center;font-size:.56rem}
+  .ml{color:var(--text3);letter-spacing:.06em;min-width:52px}
+  .mbw{flex:1;margin:0 .42rem;height:2px;background:var(--border);border-radius:2px}
+  .mb{height:100%;border-radius:2px;transition:width .8s ease}
+  .mv{font-weight:500;min-width:2.3rem;text-align:right}
+  [data-p="substack"] .mb{background:var(--amber)}[data-p="substack"] .mv{color:var(--amber)}
+  [data-p="devforum"] .mb{background:var(--cyan)}[data-p="devforum"] .mv{color:var(--cyan)}
+  [data-p="stackoverflow"] .mb{background:var(--rose)}[data-p="stackoverflow"] .mv{color:var(--rose)}
+  [data-p="github"] .mb{background:var(--lime)}[data-p="github"] .mv{color:var(--lime)}
+  [data-p="hackernews"] .mb{background:var(--violet)}[data-p="hackernews"] .mv{color:var(--violet)}
+
+  /* ── BOTTOM GRID ── */
+  .bg2{display:grid;grid-template-columns:1fr 355px;gap:1.3rem;margin-bottom:1.8rem}
+
+  /* ── INSIGHT PANEL ── */
+  .ipanel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .itbar{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.1rem;border-bottom:1px solid var(--border);background:var(--surface2);gap:.8rem;flex-wrap:wrap}
+  .itl{display:flex;align-items:center;gap:.65rem;font-size:.6rem;color:var(--text2);letter-spacing:.07em;flex-wrap:wrap}
+  .psel{display:flex;gap:.22rem;flex-wrap:wrap}
+  .psb{font-size:.56rem;padding:.16rem .48rem;border:1px solid var(--border2);background:transparent;color:var(--text3);border-radius:2px;cursor:pointer;font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;transition:all .14s}
+  .psb:hover{border-color:var(--amber);color:var(--amber)}
+  .psb.active{background:var(--amber-dim);border-color:var(--amber);color:var(--amber)}
+  .fbtn{display:flex;align-items:center;gap:.38rem;font-size:.6rem;padding:.38rem .85rem;background:var(--amber);color:#080a0e;border:none;border-radius:3px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:500;letter-spacing:.08em;white-space:nowrap;transition:filter .14s}
+  .fbtn:hover{filter:brightness(1.1)}
+  .fbtn:disabled{opacity:.45;cursor:default}
+  .fbtn .sp{width:10px;height:10px;border-radius:50%;border:2px solid rgba(0,0,0,.2);border-top-color:#000;animation:spin .7s linear infinite;display:none}
+  .fbtn.ld .sp{display:block}.fbtn.ld .bt{display:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .ibody{padding:1.2rem;min-height:255px}
+  .iph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.65rem;min-height:235px;color:var(--text3);font-size:.62rem;letter-spacing:.08em;text-align:center}
+  .iph svg{opacity:.2}
+  .ierr{display:none;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;min-height:235px;text-align:center}
+  .ierr.vis{display:flex}
+  .err-icon{font-size:1.8rem;opacity:.5}
+  .err-title{font-family:'Syne',sans-serif;font-size:.82rem;color:var(--rose);font-weight:700}
+  .err-msg{font-size:.63rem;color:var(--text3);line-height:1.6;max-width:340px}
+  .err-act{font-size:.6rem;color:var(--amber);cursor:pointer;border:1px solid rgba(245,166,35,.3);padding:.3rem .7rem;border-radius:3px;background:var(--amber-dim);transition:filter .15s}
+  .err-act:hover{filter:brightness(1.1)}
+  .ic2{display:none}.ic2.vis{display:block}
+  .itag{display:inline-flex;align-items:center;gap:.38rem;font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;padding:.16rem .48rem;border-radius:2px;margin-bottom:.8rem}
+  .ihead{font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;line-height:1.3;margin-bottom:.7rem;color:var(--text)}
+  .itext{font-size:.68rem;line-height:1.72;color:var(--text2)}
+  .ibullets{margin-top:.85rem;display:flex;flex-direction:column;gap:.42rem}
+  .ibullet{display:flex;gap:.5rem;font-size:.64rem;line-height:1.5;color:var(--text2)}
+  .bic{flex-shrink:0;margin-top:.12rem}
+
+  /* ── MATRIX ── */
+  .mpanel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .mhd{padding:.8rem 1.1rem;border-bottom:1px solid var(--border);background:var(--surface2);font-family:'Syne',sans-serif;font-weight:700;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text2)}
+  .mbd{padding:.9rem}
+  .mt{width:100%;border-collapse:collapse}
+  .mt th{font-size:.48rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);text-align:left;padding:.32rem .42rem;border-bottom:1px solid var(--border)}
+  .mt th:not(:first-child){text-align:center}
+  .mt td{font-size:.58rem;padding:.46rem .42rem;border-bottom:1px solid rgba(30,37,48,.5);vertical-align:middle}
+  .mt tr:last-child td{border-bottom:none}
+  .plbl{display:flex;align-items:center;gap:.42rem;font-weight:500;color:var(--text);white-space:nowrap}
+  .pdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+  .mc{text-align:center}
+  .pill{display:inline-block;font-size:.53rem;font-weight:500;padding:.14rem .4rem;border-radius:2px;min-width:32px}
+  .ph3{background:rgba(158,240,26,.1);color:var(--lime)}
+  .pm3{background:rgba(245,166,35,.1);color:var(--amber)}
+  .pl3{background:rgba(255,95,109,.08);color:var(--rose)}
+  .rw{display:flex;justify-content:center;margin-top:.9rem;padding-top:.8rem;border-top:1px solid var(--border)}
+
+  /* ── QUERY ── */
+  .qpanel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:1.8rem}
+  .qhdr{display:flex;align-items:center;gap:.7rem;padding:.75rem 1.1rem;border-bottom:1px solid var(--border);background:var(--surface2);font-size:.6rem;color:var(--text2);letter-spacing:.07em}
+  .qic{color:var(--amber)}
+  .qrow{display:flex;align-items:stretch;padding:.7rem;gap:.55rem}
+  .qi{flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:.58rem .82rem;font-family:'IBM Plex Mono',monospace;font-size:.66rem;color:var(--text);outline:none;transition:border-color .14s}
+  .qi:focus{border-color:var(--amber)}
+  .qi::placeholder{color:var(--text3)}
+  .qsend{padding:0 .85rem;background:transparent;border:1px solid var(--border2);border-radius:4px;color:var(--amber);cursor:pointer;font-size:1rem;transition:all .14s}
+  .qsend:hover{background:var(--amber-dim);border-color:var(--amber)}
+  .qres{padding:0 1.1rem 1.1rem;font-size:.66rem;color:var(--text2);line-height:1.72;display:none}
+  .qres.vis{display:block}
+  .qrtag{font-size:.54rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.42rem}
+  .cur{display:inline-block;width:2px;height:.85em;background:var(--amber);vertical-align:middle;animation:blk .9s step-end infinite}
+  @keyframes blk{50%{opacity:0}}
+
+  footer{border-top:1px solid var(--border);padding:.8rem 2.4rem;display:flex;justify-content:space-between;align-items:center;font-size:.54rem;color:var(--text3);letter-spacing:.08em;position:relative;z-index:2;flex-wrap:wrap;gap:.5rem}
+</style>
+</head>
+<body>
+
+<!-- ═══ API KEY MODAL ═════════════════════════════ -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal-box">
+    <div class="mhdr">
+      <div class="mtitle">Configure <span>Anakin API</span> Key</div>
+      <button class="mclose" onclick="closeModal()">✕</button>
+    </div>
+    <div class="mbod">
+
+      <div class="steps">
+        <div style="font-size:.57rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.1rem">Quick Setup</div>
+        <div class="step"><div class="snum">1</div><div>Go to <a href="https://app.anakin.ai" target="_blank">app.anakin.ai</a> → sign in</div></div>
+        <div class="step"><div class="snum">2</div><div>Navigate to <strong style="color:var(--text)">Settings → API Keys → Create New Key</strong></div></div>
+        <div class="step"><div class="snum">3</div><div>Copy the key (starts with <code>sk-</code>) and paste it below</div></div>
+        <div class="step"><div class="snum">4</div><div>Make sure <strong style="color:var(--text)">node server.js</strong> is running — the proxy routes your request to Anakin</div></div>
+      </div>
+
+      <div class="proxy-notice">
+        <strong>How it works:</strong> Your browser → <code style="font-size:.62rem">localhost:3000/api/chat</code> → <code style="font-size:.62rem">api.anakin.ai</code><br>
+        The Node proxy bypasses Anakin's browser CORS restriction. Key stored in localStorage.
+      </div>
+
+      <div>
+        <div class="flabel">Anakin API Key</div>
+        <div class="kwrap">
+          <input class="kinp" id="apiKeyInput" type="password"
+            placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+          <button class="ktog" onclick="toggleKey()">👁</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="flabel">Model</div>
+        <select class="msel" id="modelSel">
+          <option value="claude-sonnet-4-20250514">Claude Sonnet 4 — fast &amp; balanced (recommended)</option>
+          <option value="claude-opus-4-20250514">Claude Opus 4 — most capable</option>
+          <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 — fastest &amp; cheapest</option>
+          <option value="gpt-4o">GPT-4o</option>
+          <option value="gpt-4o-mini">GPT-4o Mini</option>
+        </select>
+      </div>
+
+      <div class="mst" id="mst"></div>
+    </div>
+    <div class="mft">
+      <button class="bsec" onclick="testConn()">Test Connection</button>
+      <button class="bpri" onclick="saveClose()">Save &amp; Connect →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ HEADER ════════════════════════════════════ -->
+<header>
+  <div class="logo">
+    <div class="lm">Dev<span>Intel</span></div>
+    <div class="lt">Signal Matrix · v0.6</div>
+  </div>
+  <div class="hr2">
+    <div class="tbadge">AI &amp; LLMs</div>
+    <button class="abadge" id="apiBadge" onclick="openModal()">
+      <div class="dot"></div>
+      <span id="apiText">⚙ Configure Anakin Key</span>
+    </button>
+    <div class="pulse"></div>
+  </div>
+</header>
+
+<!-- ═══ MAIN ══════════════════════════════════════ -->
+<main>
+
+  <div class="sh" style="margin-top:.2rem">
+    <h2>Source Channels</h2><div class="sl"></div>
+    <span style="font-size:.54rem;color:var(--text3);white-space:nowrap">5 PLATFORMS · AI &amp; LLM SIGNALS</span>
+  </div>
+
+  <div class="pg">
+    <div class="pc active" data-p="substack" onclick="selP(this)">
+      <div class="pi" style="background:var(--amber-dim);border-color:rgba(245,166,35,.22)">📰</div>
+      <div><div class="pn">Substack</div><div class="ph">newsletter · editorial</div></div>
+      <div class="ps2">Long-form AI essays dominating. Alignment debates &amp; model-comparison threads surging 3.2× this week...</div>
+      <div class="pm">
+        <div class="mr"><span class="ml">SNR</span><div class="mbw"><div class="mb" style="width:78%"></div></div><span class="mv">7.8</span></div>
+        <div class="mr"><span class="ml">Velocity</span><div class="mbw"><div class="mb" style="width:65%"></div></div><span class="mv">6.5</span></div>
+        <div class="mr"><span class="ml">Sentiment</span><div class="mbw"><div class="mb" style="width:82%"></div></div><span class="mv">+82%</span></div>
+      </div>
+    </div>
+    <div class="pc" data-p="devforum" onclick="selP(this)">
+      <div class="pi" style="background:var(--cyan-dim);border-color:rgba(0,212,200,.22)">💬</div>
+      <div><div class="pn">Dev.to Forum</div><div class="ph">community · discussion</div></div>
+      <div class="ps2">RAG vs fine-tuning debate rages. Context limits remain #1 pain point for production builders...</div>
+      <div class="pm">
+        <div class="mr"><span class="ml">SNR</span><div class="mbw"><div class="mb" style="width:61%"></div></div><span class="mv">6.1</span></div>
+        <div class="mr"><span class="ml">Velocity</span><div class="mbw"><div class="mb" style="width:88%"></div></div><span class="mv">8.8</span></div>
+        <div class="mr"><span class="ml">Sentiment</span><div class="mbw"><div class="mb" style="width:57%"></div></div><span class="mv">+57%</span></div>
+      </div>
+    </div>
+    <div class="pc" data-p="stackoverflow" onclick="selP(this)">
+      <div class="pi" style="background:var(--rose-dim);border-color:rgba(255,95,109,.22)">⚡</div>
+      <div><div class="pn">Stack Overflow</div><div class="ph">Q&amp;A · technical depth</div></div>
+      <div class="ps2">LangChain tokenization up 4× QoQ. Embedding benchmarks &amp; vector store comparisons dominating...</div>
+      <div class="pm">
+        <div class="mr"><span class="ml">SNR</span><div class="mbw"><div class="mb" style="width:91%"></div></div><span class="mv">9.1</span></div>
+        <div class="mr"><span class="ml">Velocity</span><div class="mbw"><div class="mb" style="width:74%"></div></div><span class="mv">7.4</span></div>
+        <div class="mr"><span class="ml">Sentiment</span><div class="mbw"><div class="mb" style="width:43%"></div></div><span class="mv">+43%</span></div>
+      </div>
+    </div>
+    <div class="pc" data-p="github" onclick="selP(this)">
+      <div class="pi" style="background:var(--lime-dim);border-color:rgba(158,240,26,.22)">🔧</div>
+      <div><div class="pn">GitHub Discussions</div><div class="ph">OSS · builders</div></div>
+      <div class="ps2">MCP protocol adoption spike — 12k new stars this week. AutoGen vs LangGraph debates heating up...</div>
+      <div class="pm">
+        <div class="mr"><span class="ml">SNR</span><div class="mbw"><div class="mb" style="width:85%"></div></div><span class="mv">8.5</span></div>
+        <div class="mr"><span class="ml">Velocity</span><div class="mbw"><div class="mb" style="width:92%"></div></div><span class="mv">9.2</span></div>
+        <div class="mr"><span class="ml">Sentiment</span><div class="mbw"><div class="mb" style="width:76%"></div></div><span class="mv">+76%</span></div>
+      </div>
+    </div>
+    <div class="pc" data-p="hackernews" onclick="selP(this)">
+      <div class="pi" style="background:var(--violet-dim);border-color:rgba(185,127,248,.22)">🔺</div>
+      <div><div class="pn">Hacker News</div><div class="ph">contrarian · critical</div></div>
+      <div class="ps2">Heavy AGI-timeline skepticism. Small efficient models gaining credibility over frontier scaling...</div>
+      <div class="pm">
+        <div class="mr"><span class="ml">SNR</span><div class="mbw"><div class="mb" style="width:72%"></div></div><span class="mv">7.2</span></div>
+        <div class="mr"><span class="ml">Velocity</span><div class="mbw"><div class="mb" style="width:55%"></div></div><span class="mv">5.5</span></div>
+        <div class="mr"><span class="ml">Sentiment</span><div class="mbw"><div class="mb" style="width:28%"></div></div><span class="mv">−28%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSIGHT + MATRIX -->
+  <div class="bg2">
+    <div class="ipanel">
+      <div class="itbar">
+        <div class="itl">
+          <span>🔍 AI INSIGHT ENGINE</span>
+          <div class="psel">
+            <button class="psb active" data-p="substack" onclick="setPsA(this)">Substack</button>
+            <button class="psb" data-p="devforum" onclick="setPsA(this)">Dev.to</button>
+            <button class="psb" data-p="stackoverflow" onclick="setPsA(this)">SO</button>
+            <button class="psb" data-p="github" onclick="setPsA(this)">GitHub</button>
+            <button class="psb" data-p="hackernews" onclick="setPsA(this)">HN</button>
+          </div>
+        </div>
+        <button class="fbtn" id="fbtn" onclick="fetchInsight()">
+          <div class="sp"></div><span class="bt">↯ Fetch Insight</span>
+        </button>
+      </div>
+      <div class="ibody">
+        <div class="iph" id="iph">
+          <svg width="38" height="38" viewBox="0 0 38 38" fill="none"><circle cx="19" cy="19" r="17" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/><path d="M19 10v9.5l4.5 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <div>SELECT PLATFORM · CLICK FETCH INSIGHT</div>
+          <div style="font-size:.54rem;color:var(--text3)">Via Anakin API · routed through local proxy</div>
+        </div>
+        <div class="ierr" id="ierr">
+          <div class="err-icon">⚠</div>
+          <div class="err-title" id="errTitle">Request Failed</div>
+          <div class="err-msg" id="errMsg"></div>
+          <div class="err-act" onclick="openModal()">⚙ Update API Key</div>
+        </div>
+        <div class="ic2" id="ic2">
+          <div class="itag" id="itag"></div>
+          <div class="ihead" id="ihead"></div>
+          <div class="itext" id="itext"></div>
+          <div class="ibullets" id="ibullets"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MATRIX -->
+    <div class="mpanel">
+      <div class="mhd">Conversational Trend Matrix</div>
+      <div class="mbd">
+        <table class="mt">
+          <thead><tr><th>Platform</th><th>SNR</th><th>Velocity</th><th>Sentiment</th></tr></thead>
+          <tbody>
+            <tr><td><div class="plbl"><div class="pdot" style="background:var(--amber)"></div>Substack</div></td><td class="mc"><span class="pill ph3">7.8</span></td><td class="mc"><span class="pill pm3">6.5</span></td><td class="mc"><span class="pill ph3">+82%</span></td></tr>
+            <tr><td><div class="plbl"><div class="pdot" style="background:var(--cyan)"></div>Dev.to</div></td><td class="mc"><span class="pill pm3">6.1</span></td><td class="mc"><span class="pill ph3">8.8</span></td><td class="mc"><span class="pill pm3">+57%</span></td></tr>
+            <tr><td><div class="plbl"><div class="pdot" style="background:var(--rose)"></div>Stack&nbsp;OV</div></td><td class="mc"><span class="pill ph3">9.1</span></td><td class="mc"><span class="pill pm3">7.4</span></td><td class="mc"><span class="pill pl3">+43%</span></td></tr>
+            <tr><td><div class="plbl"><div class="pdot" style="background:var(--lime)"></div>GitHub</div></td><td class="mc"><span class="pill ph3">8.5</span></td><td class="mc"><span class="pill ph3">9.2</span></td><td class="mc"><span class="pill ph3">+76%</span></td></tr>
+            <tr><td><div class="plbl"><div class="pdot" style="background:var(--violet)"></div>HN</div></td><td class="mc"><span class="pill pm3">7.2</span></td><td class="mc"><span class="pill pl3">5.5</span></td><td class="mc"><span class="pill pl3">−28%</span></td></tr>
+          </tbody>
+        </table>
+        <div class="rw">
+          <svg width="200" height="185" viewBox="0 0 200 185">
+            <g transform="translate(98,88)">
+              <polygon points="0,-58 50.2,29 -50.2,29" fill="none" stroke="#1e2530" stroke-width=".8"/>
+              <polygon points="0,-38 32.9,19 -32.9,19" fill="none" stroke="#1e2530" stroke-width=".8"/>
+              <polygon points="0,-19 16.4,9.5 -16.4,9.5" fill="none" stroke="#1e2530" stroke-width=".8"/>
+              <line x1="0" y1="0" x2="0" y2="-63" stroke="#1e2530" stroke-width="1"/>
+              <line x1="0" y1="0" x2="54.5" y2="31.5" stroke="#1e2530" stroke-width="1"/>
+              <line x1="0" y1="0" x2="-54.5" y2="31.5" stroke="#1e2530" stroke-width="1"/>
+              <text x="0" y="-67" text-anchor="middle" font-family="IBM Plex Mono" font-size="6.5" fill="#50596a">SNR</text>
+              <text x="58" y="36" font-family="IBM Plex Mono" font-size="6.5" fill="#50596a">Velocity</text>
+              <text x="-58" y="36" text-anchor="end" font-family="IBM Plex Mono" font-size="6.5" fill="#50596a">Sentiment</text>
+              <polygon points="0,-49 55,28 -44,23" fill="rgba(158,240,26,.11)" stroke="#9ef01a" stroke-width="1.2"/>
+              <polygon points="0,-45 39,17 -47,21" fill="rgba(245,166,35,.08)" stroke="#f5a623" stroke-width="1"/>
+              <polygon points="0,-53 44,21 -26,15" fill="rgba(255,95,109,.07)" stroke="#ff5f6d" stroke-width="1"/>
+              <polygon points="0,-42 33,15 -17,7" fill="rgba(185,127,248,.06)" stroke="#b97ff8" stroke-width=".9"/>
+              <circle cx="-50" cy="58" r="3" fill="#9ef01a"/><text x="-44" y="61" font-family="IBM Plex Mono" font-size="5.5" fill="#50596a">GitHub</text>
+              <circle cx="-14" cy="58" r="3" fill="#f5a623"/><text x="-8" y="61" font-family="IBM Plex Mono" font-size="5.5" fill="#50596a">Sub</text>
+              <circle cx="14" cy="58" r="3" fill="#ff5f6d"/><text x="20" y="61" font-family="IBM Plex Mono" font-size="5.5" fill="#50596a">SO</text>
+              <circle cx="38" cy="58" r="3" fill="#b97ff8"/><text x="44" y="61" font-family="IBM Plex Mono" font-size="5.5" fill="#50596a">HN</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUERY -->
+  <div class="sh"><h2>Cross-Platform Query</h2><div class="sl"></div></div>
+  <div class="qpanel">
+    <div class="qhdr"><span class="qic">◎</span> Ask anything across all 5 platforms — trends, signals, product build insights</div>
+    <div class="qrow">
+      <input class="qi" id="qi" type="text"
+        placeholder="e.g. Compare RAG vs fine-tuning sentiment across platforms…"
+        onkeydown="if(event.key==='Enter')sendQ()">
+      <button class="qsend" onclick="sendQ()">↗</button>
+    </div>
+    <div class="qres" id="qres">
+      <div class="qrtag">▸ INTEL RESPONSE</div>
+      <div id="qtext"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <span>DevIntel · Conversational Signal Matrix · AI &amp; LLM Focus · v0.6</span>
+  <span>Anakin API → Local Proxy → Browser · SNR · Velocity · Sentiment</span>
+</footer>
+
+<script>
+const PROXY = '/api/insights';
+
+let activeP = 'substack';
+
+// keep modal state (UI only)
+let apiKey = localStorage.getItem('di_key') || '';
+let model = localStorage.getItem('di_model') || 'claude-sonnet-4';
+
+// PLATFORM META
+const PM = {
+  substack:{name:'Substack',color:'#f5a623',bg:'rgba(245,166,35,0.12)',e:'📰'},
+  devforum:{name:'Dev.to Forum',color:'#00d4c8',bg:'rgba(0,212,200,0.1)',e:'💬'},
+  stackoverflow:{name:'Stack Overflow',color:'#ff5f6d',bg:'rgba(255,95,109,0.1)',e:'⚡'},
+  github:{name:'GitHub Discussions',color:'#9ef01a',bg:'rgba(158,240,26,0.1)',e:'🔧'},
+  hackernews:{name:'Hacker News',color:'#b97ff8',bg:'rgba(185,127,248,0.1)',e:'🔺'}
+};
+
+// INIT (UI preserved)
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('apiKeyInput').value = apiKey;
+  document.getElementById('modelSel').value = model;
+  updateBadge();
+
+  // keep modal optional (not blocking anymore)
+  document.getElementById('apiModal').classList.add('hidden');
+});
+
+// MODAL (UI only, no blocking)
+function openModal(){ document.getElementById('apiModal').classList.remove('hidden'); }
+function closeModal(){ document.getElementById('apiModal').classList.add('hidden'); }
+function toggleKey(){
+  const i=document.getElementById('apiKeyInput');
+  i.type=i.type==='password'?'text':'password';
+}
+function saveClose(){
+  apiKey = document.getElementById('apiKeyInput').value;
+  model = document.getElementById('modelSel').value;
+  localStorage.setItem('di_key', apiKey);
+  localStorage.setItem('di_model', model);
+  updateBadge();
+  closeModal();
+}
+function updateBadge(){
+  const b=document.getElementById('apiBadge');
+  const t=document.getElementById('apiText');
+  if(apiKey){
+    b.classList.add('ok');
+    t.textContent='✓ Local Mode Active';
+  } else {
+    b.classList.remove('ok');
+    t.textContent='⚙ Optional API Mode';
+  }
+}
+
+// BACKEND CALL
+async function callAPI(){
+  const res = await fetch(PROXY);
+  if(!res.ok) throw new Error("Server not running");
+  return await res.json();
+}
+
+// PLATFORM SELECT
+function selP(card){
+  document.querySelectorAll('.pc').forEach(c=>c.classList.remove('active'));
+  card.classList.add('active');
+  activeP=card.dataset.p;
+  syncPs();
+}
+function setPsA(btn){
+  activeP=btn.dataset.p;
+  syncPs();
+  document.querySelectorAll('.pc').forEach(c=>
+    c.classList.toggle('active',c.dataset.p===activeP));
+}
+function syncPs(){
+  document.querySelectorAll('.psb').forEach(b=>
+    b.classList.toggle('active',b.dataset.p===activeP));
+}
+
+// FETCH INSIGHT
+async function fetchInsight(){
+  const btn=document.getElementById('fbtn');
+  btn.classList.add('ld'); btn.disabled=true;
+
+  document.getElementById('iph').style.display='none';
+  document.getElementById('ierr').classList.remove('vis');
+  document.getElementById('ic2').classList.remove('vis');
+
+  try{
+    const data = await callAPI();
+
+    const map={
+      substack:"substack",
+      devforum:"dev.to",
+      stackoverflow:"stackoverflow",
+      github:"github",
+      hackernews:"ycombinator"
+    };
+
+    const result=data.results.find(r =>
+      r.url.toLowerCase().includes(map[activeP])
+    );
+
+    if(!result) throw new Error("No data found");
+
+    const m=PM[activeP];
+
+    renderInsight({
+      headline:`Live signal from ${m.name}`,
+      summary:`Source: ${result.url}`,
+      bullets:[
+        "Real scraped data via Anakin CLI",
+        "Served through Node.js backend",
+        "UI powered insight layer (ready for LLM)"
+      ]
+    },m);
+
+  }catch(e){
+    showErr(e);
+  }
+
+  btn.classList.remove('ld');
+  btn.disabled=false;
+}
+
+// RENDER
+function renderInsight(d,m){
+  document.getElementById('ierr').classList.remove('vis');
+  document.getElementById('ic2').classList.add('vis');
+
+  const tag=document.getElementById('itag');
+  tag.style.background=m.bg;
+  tag.style.color=m.color;
+  tag.style.border=`1px solid ${m.color}40`;
+  tag.textContent=m.e+' '+m.name.toUpperCase();
+
+  document.getElementById('ihead').textContent=d.headline;
+  document.getElementById('itext').textContent=d.summary;
+
+  const bl=document.getElementById('ibullets');
+  bl.innerHTML='';
+
+  d.bullets.forEach(b=>{
+    const div=document.createElement('div');
+    div.className='ibullet';
+    div.innerHTML=`<span class="bic" style="color:${m.color}">▸</span>${b}`;
+    bl.appendChild(div);
+  });
+}
+
+// ERROR
+function showErr(e){
+  document.getElementById('ic2').classList.remove('vis');
+  document.getElementById('ierr').classList.add('vis');
+  document.getElementById('errMsg').textContent=
+    "Run: node server.js → then refresh";
+}
+
+// QUERY (kept UI, simulated logic)
+function sendQ(){
+  const q=document.getElementById('qi').value.trim();
+  if(!q) return;
+
+  const qt=document.getElementById('qtext');
+  document.getElementById('qres').classList.add('vis');
+
+  qt.textContent="Analyzing signals...";
+
+  setTimeout(()=>{
+    qt.textContent=
+      "GitHub and Stack Overflow show highest technical depth, while Dev.to drives experimentation velocity. Substack captures strategic narratives, and Hacker News remains critical. Product insight: build tools that balance usability with performance transparency.";
+  },800);
+}
+</script></body>
+</html>

@@ -4,15 +4,12 @@ Understand what developers are talking about what is trending and what actually 
 
 This project uses the Anakin API with a local Node proxy to avoid browser CORS issues and keep your API key secure
 
----
 
 ## What this does
 
 Signal to Noise Ratio SNR filters useful insights from noise  
 Topic Velocity shows what is gaining traction right now  
 Community Sentiment captures how developers feel about topics  
-
----
 
 ## Why a proxy is used
 
@@ -27,8 +24,6 @@ Browser → localhost 3000 api chat → api anakin ai
 API key stays on your machine  
 No external proxy or backend needed  
 Simple local setup  
-
----
 
 ## Quick start build and run
 
@@ -87,8 +82,6 @@ Select model
 Click Test Connection  
 Save  
 
----
-
 ## Project structure
 
 ```
@@ -102,8 +95,6 @@ devintel
 └── README.md
 ```
 
----
-
 ## Models
 
 claude sonnet 4 best balance  
@@ -111,8 +102,6 @@ claude opus 4 most capable
 claude haiku fast and light  
 gpt 4o strong general use  
 gpt 4o mini fast and low cost  
-
----
 
 ## Troubleshooting
 
@@ -122,15 +111,11 @@ Invalid key regenerate from Anakin
 Rate limit wait and retry  
 Node not found install Node  
 
----
-
 ## How to use it
 
 Compare signals across platforms  
 Track velocity to catch trends early  
 Use sentiment to validate ideas  
-
----
 
 ## License
 

@@ -1,127 +1,147 @@
-DevIntel Signal Matrix · Anakin API Edition
-============================================
+# DevIntel Signal Matrix
+### Anakin API Edition
 
-  Understand what developers are talking about, what is trending, and what
-  actually matters across Substack, Dev.to, Stack Overflow, GitHub, and
-  Hacker News. Built on the Anakin API with a local Node proxy to keep your
-  key secure and bypass browser CORS restrictions.
+<img width="1909" height="840" alt="image" src="https://github.com/user-attachments/assets/055d2de9-bd9a-49fa-8c85-fdfc67781460" />
 
+> Understand what developers are talking about, what is trending, and what actually matters — across Substack, Dev.to, Stack Overflow, GitHub, and Hacker News.
 
-What This Does
-==============
+---
 
-  ◆  Signal to Noise Ratio (SNR)  ·  Filters useful insights from noise
-  ◆  Topic Velocity               ·  Shows what is gaining traction right now
-  ◆  Community Sentiment          ·  Captures how developers feel about topics
+## Overview
 
+DevIntel uses the **Anakin API** with a local Node.js proxy to aggregate and analyze developer signals. It filters noise, tracks topic velocity, and surfaces community sentiment in one place.
 
-Why a Proxy Is Used
-===================
+| Feature | What It Does |
+|---|---|
+| Signal to Noise Ratio (SNR) | Filters useful insights from noise |
+| Topic Velocity | Shows what is gaining traction right now |
+| Community Sentiment | Captures how developers feel about topics |
 
-  Browsers block direct requests to the Anakin API due to CORS restrictions.
-  A lightweight local Node server handles all API communication instead.
+---
 
-  Request flow
+## Why a Proxy?
 
-    Browser  →  localhost:3000/api/chat  →  api.anakin.ai
+Browsers cannot make direct requests to the Anakin API due to CORS restrictions. A lightweight local Node.js server sits in between and handles all API calls.
 
-  ◆  API key stays on your machine
-  ◆  No external proxy or backend needed
-  ◆  Simple one-command local setup
+```
+Browser  →  localhost:3000/api/chat  →  api.anakin.ai
+```
 
+- Your API key never leaves your machine
+- No external proxy or third-party backend
+- One command to run, nothing to deploy
 
-Project Structure
-=================
+---
 
-  devintel/
-  ├── index.html      ·  UI
-  ├── server.js       ·  Node proxy and static server
-  ├── package.json    ·  Dependencies
-  ├── .env.example    ·  API key template
-  ├── .gitignore
-  └── README.md
+## Requirements
 
+- [Node.js](https://nodejs.org) v18 or later
+- An [Anakin API](https://anakin.ai) key
 
-Models
-======
+---
 
-  claude-sonnet-4   ·  Best balance of speed and capability
-  claude-opus-4     ·  Most capable, for deep analysis
-  claude-haiku      ·  Fast and lightweight
-  gpt-4o            ·  Strong general-purpose performance
-  gpt-4o-mini       ·  Fast and low cost
+## Getting Started
 
+### 1. Clone the repository
 
-Quick Start
-===========
+```bash
+git clone <your-repo-url>
+cd devintel
+```
 
-  Step 1  ·  Clone the project
-  ─────────────────────────────
-    git clone <your-repo-url>
-    cd devintel
+### 2. Install dependencies
 
+```bash
+npm install
+```
 
-  Step 2  ·  Add your API key
-  ────────────────────────────
-    cp .env.example .env
+### 3. Configure your API key
 
-  Open .env and set:
+```bash
+cp .env.example .env
+```
 
-    ANAKIN_API_KEY=sk-your-key-here
+Open `.env` and add your key:
 
-  You can also paste the key directly in the UI at any time.
+```env
+ANAKIN_API_KEY=sk-your-key-here
+```
 
+> You can also paste the key directly in the UI — no restart needed.
 
-  Step 3  ·  Check Node installation
-  ────────────────────────────────────
-    node -v
+### 4. Start the server
 
-  Not installed? Download from https://nodejs.org
+```bash
+node server.js
+```
 
+You should see:
 
-  Step 4  ·  Run the server
-  ──────────────────────────
-    node server.js
+```
+DevIntel Signal Matrix running at http://localhost:3000
+```
 
-  Expected output:
+### 5. Open the app
 
-    DevIntel Signal Matrix running at http://localhost:3000
+```
+http://localhost:3000
+```
 
+### 6. Connect Anakin in the UI
 
-  Step 5  ·  Open in browser
-  ───────────────────────────
-    http://localhost:3000
+1. Paste your API key
+2. Select a model (see options below)
+3. Click **Test Connection**
+4. Click **Save**
 
+---
 
-  Step 6  ·  Connect Anakin
-  ──────────────────────────
-    ▸  Paste your API key
-    ▸  Select a model
-    ▸  Click Test Connection
-    ▸  Save
+## Supported Models
 
+| Model | Best For |
+|---|---|
+| `claude-sonnet-4` | Best balance of speed and capability |
+| `claude-opus-4` | Most capable — deep analysis |
+| `claude-haiku` | Fast and lightweight |
+| `gpt-4o` | Strong general-purpose performance |
+| `gpt-4o-mini` | Fast and low cost |
 
-How to Use It
-=============
+---
 
-  ▸  Compare signals across platforms to spot cross-community patterns
-  ▸  Track velocity to catch trends before they peak
-  ▸  Use sentiment to validate ideas and gauge developer reception
+## How to Use It
 
+- **Compare signals** across platforms to spot cross-community patterns
+- **Track velocity** to catch trends before they peak
+- **Use sentiment** to validate ideas and gauge developer reception
 
-Troubleshooting
-===============
+---
 
-  Issue                   Fix
-  ──────────────────────  ──────────────────────────────────────
-  Cannot reach proxy      Run node server.js
-  Page not loading        Use http://localhost:3000
-  Invalid API key         Regenerate from the Anakin dashboard
-  Rate limit hit          Wait briefly and retry
-  Node not found          Install from nodejs.org
+## Project Structure
 
+```
+devintel/
+├── index.html        UI
+├── server.js         Node proxy and static file server
+├── package.json      Dependencies and scripts
+├── .env.example      API key template
+├── .gitignore
+└── README.md
+```
 
-License
-=======
+---
 
-  MIT
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| Cannot reach proxy | Run `node server.js` |
+| Page not loading | Make sure you are on `http://localhost:3000` |
+| Invalid API key | Regenerate your key from the Anakin dashboard |
+| Rate limit error | Wait a moment and retry |
+| Node not found | Install from [nodejs.org](https://nodejs.org) |
+
+---
+
+## License
+
+MIT
